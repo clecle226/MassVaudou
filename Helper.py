@@ -1,4 +1,5 @@
-from subprocess import Popen, PIPE
+import subprocess
+from subprocess import PIPE
 
 class DeviceHelper():
     Processus = None
@@ -6,10 +7,14 @@ class DeviceHelper():
     IMEI1 = None
     IMEI2 = None
     SerialNumber = None
+    InProc = None
+    OutProc = None
+
 
     def __init__(self):
-        Processus = subprocess.Popen("adb shell")
+        self.Processus = subprocess.Popen("./platform-tools/adb shell", stdin=PIPE, stdout=PIPE)
     def ShellIn(self, Message):
-        Processus.communicate(Message, time)
-
+        #out, err = self.Processus.communicate(Message, 15)
+        self.Processus.stdin.write(str.encode(Message)
+        print(str.decode(self.Processus.stdout.read())
     #def ShellOut(self):
