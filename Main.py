@@ -2,12 +2,18 @@ import sys
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel
 from PySide2.QtCore import QFile, QObject, Signal, Slot, QDir
 from ui_mainwindow import Ui_MainWindow
+import Helper
 
 class MainWindow(QMainWindow):
+    Manager = None
+
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        self.Manager = Helper.ManagerDevice()
+        self.Manager.start()
 
         self.ui.SelectScript.clicked.connect(self.LoadFormFile)
         self.ui.SelectData.clicked.connect(self.LoadFormFile)
@@ -41,6 +47,8 @@ class MainWindow(QMainWindow):
             print("Error")
     def ChangerLogTerminal(self, Content = ""):
         self.ui.LogTerminal.setText(Content)
+    def __del__(self):
+        self.Manager.stop()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -48,4 +56,6 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
 
-    sys.exit(app.exec_())
+    app.aboutToQuit.connect(app.deleteLater)
+    app.exec_()
+    #sys.exit()
