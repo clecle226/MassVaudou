@@ -29,9 +29,13 @@ class DeviceHelper():
         (self.ShellIn("uiautomator dump /dev/tty"))
 #def ShellOut(self):
 
-
-def add_function_Masterisation(func):
+def add_function_Masterisation(Ordre):
+    def add_function_Masterisation_decorator(func):
+        func()
+    print(Ordre)
     setattr(DeviceHelper, func.__name__, func)
+    return FunctionToAdd
+    
 
 class Device(Thread):
     SerialNo = ""
