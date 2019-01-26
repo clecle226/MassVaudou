@@ -14,6 +14,7 @@ class DeviceHelper():
     SerialNumber = ""
 
     FunctionCallDict = {}
+    ListVariable = []
 
 
     def __init__(self, serialNo):
@@ -48,6 +49,8 @@ def add_function_Masterisation(Ordre):
         return wrapper
     return real_decorator
     
+def add_variable_Masterisation(ListVariable):
+    DeviceHelper.ListVariable = ListVariable
 
 class Device(Thread):
     SerialNo = ""

@@ -1,6 +1,8 @@
-from Helper import DeviceHelper, add_function_Masterisation
+from Helper import DeviceHelper, add_function_Masterisation, add_variable_Masterisation
 import time
 import types
+
+add_variable_Masterisation(["ProgramToLoad"])
 
 @add_function_Masterisation(1)
 def run(self):
