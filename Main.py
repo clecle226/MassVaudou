@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.Manager = Helper.ManagerDevice()
+        self.Manager = Helper.ManagerDevice(self)
         self.Manager.start()
 
         self.ui.SelectScript.clicked.connect(self.LoadFormFile)
@@ -29,8 +29,11 @@ class MainWindow(QMainWindow):
         if(self.sender() == self.ui.SelectScript):
             self.LoadScripts(result)
         elif(self.sender() == self.ui.SelectData):
-            self.ui.PathData.setText(result)
+            self.LoadData(result)
 
+    def LoadData(self, result = None)
+        self.ui.PathData.setText(result)
+        
     def LoadScripts(self, Result = None):
         DirScript = QDir(Result)
         if DirScript.cd("Script"):
@@ -40,10 +43,9 @@ class MainWindow(QMainWindow):
                     # removes module from the system
                     mod_name = mod.baseName()
                     if mod_name in sys.modules:
-                        ListFunction = dir(mod_name)
+                        #ListFunction = dir(mod_name)
                         del sys.modules[mod_name]
-                        for function in ListFunction:
-                            del Helper.DeviceHelper.__dict__[function]
+                        Helper.DeviceHelper.FunctionCallDict = {}
                     self.ui.ListScript.addItem(mod.fileName())
             self.ui.PathScript.setText(Result)
             self.ui.LogTerminal.setText(DirScript.absolutePath())
@@ -56,6 +58,7 @@ class MainWindow(QMainWindow):
                 #    Helper.DeviceHelper.function = types.MethodType(function,Helper.DeviceHelper)
                     #setattr(Helper.DeviceHelper, ScriptModule.__dict__[function], function)
                     #Helper.DeviceHelper.__dict__[function] = function
+            self.Manager.ReloadTerminaux()
         else:
             #Error
             print("Error")

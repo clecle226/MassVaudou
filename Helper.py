@@ -4,6 +4,7 @@ from threading import Thread
 import re
 import types
 import os
+from functools import wraps
 
 class DeviceHelper():
     Processus = None
@@ -12,12 +13,15 @@ class DeviceHelper():
     IMEI2 = None
     SerialNumber = ""
 
+    FunctionCallDict = {}
+
 
     def __init__(self, serialNo):
         #self.Log += ""
         # Search Run popen in parallels
         #self.Processus = subprocess.Popen(".\\platform-tools\\adb.exe shell", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         self.SerialNumber = serialNo
+        self.GetIMEI()
         #print(self.Processus.poll())
         #self.Processus.stdin.write(str.encode("am start -p com.android.chrome\n"))
         #self.Processus = subprocess.Popen(".\\platform-tools\\adb.exe shell", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -26,15 +30,23 @@ class DeviceHelper():
         self.Log += str(result.stdout)
         return str(result.stdout)
     def ClickOnNode(self, NameNode):
-        (self.ShellIn("uiautomator dump /dev/tty"))
+       print(self.ShellIn("uiautomator dump /dev/tty"))
+    def GetIMEI(self):
+        rawResult = self.ShellIn("service call iphonesubinfo 1")
+        tradParcell = "".join(re.findall(r"\'(.*?)\'", rawResult))
+        self.IMEI1 = tradParcell.replace(".","")
 #def ShellOut(self):
 
+
+
 def add_function_Masterisation(Ordre):
-    def add_function_Masterisation_decorator(func):
-        func()
-    print(Ordre)
-    setattr(DeviceHelper, func.__name__, func)
-    return FunctionToAdd
+    def real_decorator(func):
+        setattr(DeviceHelper, func.__name__, func)
+        DeviceHelper.FunctionCallDict[Ordre] = func.__name__
+        def wrapper(*args, **kw):
+            return func(*args, **kw)
+        return wrapper
+    return real_decorator
     
 
 class Device(Thread):
@@ -47,20 +59,19 @@ class Device(Thread):
         self.HelperNode = DeviceHelper(serialNo)
 
     def run(self):
-        #DeviceHelper.run = types.MethodType( TestDevice.run, DeviceHelper )
-
-        self.HelperNode.run()
-        #prnit("")
+        functioCallable = getattr(self.HelperNode, self.HelperNode.FunctionCallDict[1])
+        functioCallable()
 
 
 class ManagerDevice(Thread):
     ListDevice = dict()
     ThreadUpdateList  = None
     Continue = True
-    
+    CallUi = None
 
-    def __init__(self):
+    def __init__(self, Ui):
         Thread.__init__(self)
+        self.CallUi = Ui
 
     def run(self):
         while self.Continue:
@@ -75,10 +86,12 @@ class ManagerDevice(Thread):
             #Ajout de la ListDevice
             AddList = list(set(tmpList)-set(self.ListDevice.keys()))
             for item in AddList:
-                self.ListDevice[item] = Device(item)
+                self.AddDevice(item)
             #Delete de la ListDevice
             RemoveList = list(set(self.ListDevice.keys())-set(tmpList))
-            
+    def AddDevice(self, Serial):
+        self.ListDevice[Serial] = Device(Serial)
+        self.CallUi.ui.ListScript.addItem(Serial)
     def goDevice(self, Serial = None):
         
         if Serial != None:
@@ -86,5 +99,14 @@ class ManagerDevice(Thread):
         else:
             for item in self.ListDevice:
                 self.ListDevice[item].run()
+    def CleanAll(self):
+        fixedKeys = set(self.ListDevice.keys())
+        for key in fixedKeys:
+            del self.ListDevice[key]
+    def ReloadTerminaux(self):
+        fixedKeys = set(self.ListDevice.keys())
+        self.CleanAll()
+        for key in fixedKeys:
+            self.AddDevice(key)
     def stop(self):
         self.Continue = False
