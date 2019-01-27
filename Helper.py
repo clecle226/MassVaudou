@@ -13,7 +13,7 @@ class DeviceHelper():
     IMEI2 = None
     SerialNumber = ""
 
-    FunctionCallDict = {}
+    FunctionCallDict = []
     ListVariable = []
 
 
@@ -55,6 +55,8 @@ def add_variable_Masterisation(ListVariable):
 class Device(Thread):
     SerialNo = ""
     HelperNode = None
+    DataPerso = None
+    ValeurScriptExecution = 0
 
     def __init__(self, serialNo):
         Thread.__init__(self)
@@ -64,6 +66,9 @@ class Device(Thread):
     def run(self):
         functioCallable = getattr(self.HelperNode, self.HelperNode.FunctionCallDict[1])
         functioCallable()
+
+    def GetState(self):
+        return {SerialNo }
 
 
 class ManagerDevice(Thread):
@@ -75,6 +80,9 @@ class ManagerDevice(Thread):
     def __init__(self, Ui):
         Thread.__init__(self)
         self.CallUi = Ui
+
+    def UpdateViewListDevice(self):
+        for device in self.ListDevice.keys:
 
     def run(self):
         while self.Continue:

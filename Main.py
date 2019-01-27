@@ -1,5 +1,5 @@
 import sys
-from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel
+from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel, QAbstractItemView
 from PySide2.QtCore import QFile, QObject, Signal, Slot, QDir
 from ui_mainwindow import Ui_MainWindow
 import Helper
@@ -22,6 +22,9 @@ class MainWindow(QMainWindow):
         self.ui.SelectScript.clicked.connect(self.LoadScripts)
         self.ui.SelectData.clicked.connect(self.LoadData)
         self.ui.ButtonAllGo.clicked.connect(self.ButtonAllGo)
+
+        self.ui.tableWidget.setColumnCount(3)
+        self.ui.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
 
     def ButtonAllGo(self):
         self.Manager.goDevice()
