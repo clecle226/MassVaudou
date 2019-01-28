@@ -3,6 +3,10 @@ from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel
 from PySide2.QtCore import QFile, QObject, Signal, Slot, QDir
 from ui_mainwindow import Ui_MainWindow
 import Helper
+import requests
+import zipfile
+import platform
+import io
 
 global ExtenalClassMasterisation
 
@@ -10,6 +14,19 @@ class MainWindow(QMainWindow):
     Manager = None
 
     def __init__(self):
+        DossierActuel = QDir(QDir.currentPath())
+        if not DossierActuel.cd("platform-tools"):
+            url = None
+            if platform.system() == "Windows":
+                url = 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip'
+            elif platform.system() == "Darwin":#MacOS
+                url = 'https://dl.google.com/android/repository/platform-tools-latest-darwin.zip' 
+            elif platform.system() == "Linux":
+                url = 'https://dl.google.com/android/repository/platform-tools-latest-linux.zip' 
+            reply = requests.get(url)
+            zip_ref = zipfile.ZipFile(io.BytesIO(reply.content))
+            zip_ref.extractall(DossierActuel.absolutePath())
+            zip_ref.close()
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
