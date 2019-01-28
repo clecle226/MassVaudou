@@ -4,6 +4,8 @@ from threading import Thread
 import re
 import types
 import os
+from PySide2.QtCore import QDir
+import platform
 
 class DeviceHelper():
     Processus = None
@@ -22,7 +24,14 @@ class DeviceHelper():
         #self.Processus.stdin.write(str.encode("am start -p com.android.chrome\n"))
         #self.Processus = subprocess.Popen(".\\platform-tools\\adb.exe shell", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     def ShellIn(self, Message):
-        result = subprocess.run(".\\platform-tools\\adb.exe shell "+Message, env={**os.environ, 'ANDROID_SERIAL': self.SerialNumber}, capture_output=True)
+        DossierActuel = QDir(QDir.currentPath())
+        DossierActuel.cd("platform-tools")
+        PathExecutable = ""
+        if platform.system() == "Windows":
+            PathExecutable = DossierActuel.absoluteFilePath("adb.exe")
+        else:
+            PathExecutable = DossierActuel.absoluteFilePath("adb")
+        result = subprocess.run(PathExecutable+" shell "+Message, env={**os.environ, 'ANDROID_SERIAL': self.SerialNumber}, capture_output=True)
         self.Log += str(result.stdout)
         return str(result.stdout)
     def ClickOnNode(self, NameNode):
