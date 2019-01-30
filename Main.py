@@ -1,6 +1,6 @@
 import sys
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QLabel, QAbstractItemView
-from PySide2.QtCore import QFile, QObject, Signal, Slot, QDir
+from PySide2.QtCore import QFile, QObject, Signal, Slot, QDir, QObject, SIGNAL
 from ui_mainwindow import Ui_MainWindow
 import Helper
 import csv
@@ -43,9 +43,15 @@ class MainWindow(QMainWindow):
         self.ui.tableWidget.setColumnCount(3)
         self.ui.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.ui.tableWidget.setHorizontalHeaderLabels(["ID", "Donnée Vérifié", "Etat du script"])
+        self.ui.tableWidget.itemActivated.connect(self.ClickDevice)
+        #QObject.connect(self.ui.tableWidget, SIGNAL ('itemClicked(item)'), self.ClickDevice)
 
     def ButtonAllGo(self):
         self.Manager.goDevice()
+
+    def ClickDevice(self, item):
+        ClickDevice = (self.ui.tableWidget.item(item.row(),0).text())
+        self.ChangerLogTerminal(self.Manager.GetLog(ClickDevice))
 
     def LoadData(self):
         result = (QFileDialog.getOpenFileName(self))[0]

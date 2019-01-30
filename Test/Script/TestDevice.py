@@ -5,8 +5,9 @@ import types
 
 @add_function_Masterisation(1)
 def run(self):
-    print(self.ShellIn("am start -p com.android.chrome"))
-    print(self.ShellIn("ls -la"))
+    self.ShellIn("svc power stayon true") #Desactiver Mise en veille
+    self.ShellIn("am start -n com.android.chrome/com.google.android.apps.chrome.Main")
+    self.ShellIn("ls -la")
     self.ClickOnNode("test")
     #am start -n com.android.settings/.Settings\$DisplaySettingsActivity
 #DeviceHelper.run = types.MethodType( run, DeviceHelper )

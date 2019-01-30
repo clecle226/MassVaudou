@@ -24,15 +24,10 @@ class DeviceHelper():
 
 
     def __init__(self, serialNo):
-        #self.Log += ""
-        # Search Run popen in parallels
-        #self.Processus = subprocess.Popen(".\\platform-tools\\adb.exe shell", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         self.SerialNumber = serialNo
         self.GetIMEI()
-        #print(self.Processus.poll())
-        #self.Processus.stdin.write(str.encode("am start -p com.android.chrome\n"))
-        #self.Processus = subprocess.Popen(".\\platform-tools\\adb.exe shell", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    def ShellIn(self, Message):
+        
+    def ShellIn(self, Message, PrintLog = True):
         DossierActuel = QDir(QDir.currentPath())
         DossierActuel.cd("platform-tools")
         PathExecutable = ""
@@ -41,12 +36,14 @@ class DeviceHelper():
         else:
             PathExecutable = DossierActuel.absoluteFilePath("adb")
         result = subprocess.run(PathExecutable+" shell "+Message, env={**os.environ, 'ANDROID_SERIAL': self.SerialNumber}, capture_output=True)
-        self.Log += str(result.stdout)
+        self.Log += "<--"+str(Message)
+        if PrintLog:
+            self.Log += "-->"+str(result.stdout)
         return str(result.stdout)
     def ClickOnNode(self, NameNode):
-       print(self.ShellIn("uiautomator dump /dev/tty"))
+       print(self.ShellIn("uiautomator dump /dev/tty", False))
     def GetIMEI(self):
-        rawResult = self.ShellIn("service call iphonesubinfo 1")
+        rawResult = self.ShellIn("service call iphonesubinfo 1", False)
         tradParcell = "".join(re.findall(r"\'(.*?)\'", rawResult))
         self.IMEI1 = (tradParcell.replace(".","")).strip()
         return self.IMEI1
@@ -74,9 +71,9 @@ class Device(Thread):
     StateProc = 0 # O= Non commencé, 1 = en cours, 2 = Fini
     ValeurScriptExecution = 0
 
-    ItemId = None
-    ItemData = None
-    ItemProcess = None
+    ItemId = QTableWidgetItem()
+    ItemData = QTableWidgetItem()
+    ItemProcess = QTableWidgetItem()
 
     def __init__(self, serialNo):
         Thread.__init__(self)
@@ -84,12 +81,15 @@ class Device(Thread):
         self.HelperNode = DeviceHelper(serialNo)
         self.VerifyData()
 
-        self.ItemId = QTableWidgetItem(str(id))
+        self.ItemId = QTableWidgetItem(str(self.SerialNo))
         self.ItemId.setFlags( Qt.ItemIsSelectable |  Qt.ItemIsEnabled )
-        self.ItemData = QTableWidgetItem()
+        self.ItemData = QTableWidgetItem("")
         self.ItemData.setFlags( Qt.ItemIsSelectable |  Qt.ItemIsEnabled )
-        self.ItemProcess = QTableWidgetItem()
+        self.ItemProcess = QTableWidgetItem("")
         self.ItemProcess.setFlags( Qt.ItemIsSelectable |  Qt.ItemIsEnabled )
+        self.UpdateItem()
+
+    def UpdateItem(self):
         if not self.StateData:
             self.ItemData.setIcon(QIcon(".\\Asset\\red.svg"))
         else:
@@ -106,6 +106,9 @@ class Device(Thread):
 
     def GetState(self):
         return self.SerialNo, self.StateData, self.StateProc
+    
+    def GetItem(self):
+        return self.ItemId, self.ItemData, self.ItemProcess
 
     def GetIMEI(self):
         return self.HelperNode.GetIMEI()
@@ -115,9 +118,14 @@ class Device(Thread):
         for item in self.HelperNode.ListVariable:
             if item not in self.HelperNode.Variable.keys():
                 self.StateData = False
+        self.UpdateItem()
+
     def SetData(self, Data):
         self.HelperNode.Variable = Data
         self.VerifyData()
+
+    def GetLog(self):
+        return self.HelperNode.Log
 
 
 class ManagerDevice(Thread):
@@ -132,19 +140,24 @@ class ManagerDevice(Thread):
         self.CallUi = Ui
 
     def UpdateViewListDevice(self):
-        self.CallUi.ui.tableWidget.setRowCount(0)
-        self.CallUi.ui.tableWidget.setRowCount(len(self.ListDevice.keys()))
+        #self.CallUi.ui.tableWidget.setRowCount(0)
+        #self.CallUi.ui.tableWidget.setRowCount(len(self.ListDevice.keys()))
         i = 0
-        for device in self.ListDevice.keys():
-            id, data, process = (self.ListDevice[device]).GetState()
+        #ListIdDeviceTable = []
+        #LenRow = self.CallUi.ui.tableWidget.rowCount()
+        #while i < LenRow:
+        #    ListIdDeviceTable.append(self.CallUi.ui.tableWidget.item(i, 0))
+        
+        #for device in self.ListDevice.keys():
+        #    id, data, process = (self.ListDevice[device]).GetState()
 
-            self.CallUi.ui.tableWidget.setItem(i, 1, itemTwo)
-            self.CallUi.ui.tableWidget.setItem(i, 2, itemThree)
+        #    self.CallUi.ui.tableWidget.setItem(i, 1, itemTwo)
+        #    self.CallUi.ui.tableWidget.setItem(i, 2, itemThree)
 
 
 #            self.CallUi.ui.tableWidget.setItem(i, 1, QTableWidgetItem(QLabel(id)))
 #            self.CallUi.ui.tableWidget.setItem(i, 2, QTableWidgetItem(QLabel(id)))
-            i += 1
+        #    i += 1
 
 
     def run(self):
@@ -164,10 +177,23 @@ class ManagerDevice(Thread):
             RemoveList = list(set(self.ListDevice.keys())-set(tmpList))
             self.UpdateViewListDevice()
             time.sleep(2)
+
+
     def AddDevice(self, Serial):
         self.ListDevice[Serial] = Device(Serial)
-        #self.CallUi.ui.ListScript.addItem(Serial)
-        self.UpdateViewListDevice()
+
+        Itemid, data, process = (self.ListDevice[Serial]).GetItem()
+        self.CallUi.ui.tableWidget.setRowCount(self.CallUi.ui.tableWidget.rowCount()+1)
+        self.CallUi.ui.tableWidget.setItem(self.CallUi.ui.tableWidget.rowCount()-1, 0, Itemid)
+        self.CallUi.ui.tableWidget.setItem(self.CallUi.ui.tableWidget.rowCount()-1, 1, data)
+        self.CallUi.ui.tableWidget.setItem(self.CallUi.ui.tableWidget.rowCount()-1, 2, process)
+
+        #self.UpdateViewListDevice()
+    def RemoveDevice(self, Serial):
+        ItemId, _, _ = (self.ListDevice[Serial]).GetItem()
+        self.CallUi.ui.tableWidget.removeRow(self.CallUi.ui.tableWidget.row(ItemId))
+        del self.ListDevice[Serial]
+
     def goDevice(self, Serial = None):
         
         if Serial != None:
@@ -178,7 +204,7 @@ class ManagerDevice(Thread):
     def CleanAll(self):
         fixedKeys = set(self.ListDevice.keys())
         for key in fixedKeys:
-            del self.ListDevice[key]
+            self.RemoveDevice(key)
     def ReloadTerminaux(self):
         fixedKeys = set(self.ListDevice.keys())
         self.CleanAll()
@@ -197,4 +223,7 @@ class ManagerDevice(Thread):
                 for deviceIMEI in self.ListDevice.keys():
                     if self.ListDevice[deviceIMEI].GetIMEI() == deviceID:
                         self.ListDevice[deviceIMEI].SetData(self.DataParse[deviceID])
+    
+    def GetLog(self, Serial):
+        return self.ListDevice[Serial].GetLog()
 
