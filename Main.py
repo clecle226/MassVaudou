@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
 
         self.ui.tableWidget.setColumnCount(3)
         self.ui.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.ui.tableWidget.setHorizontalHeaderLabels(["ID", "Donnée Vérifié", "Etat du script"])
 
     def ButtonAllGo(self):
         self.Manager.goDevice()
@@ -72,9 +73,10 @@ class MainWindow(QMainWindow):
                         self.DataParse[row[DeviceIDIndex]] = tmp
                     else:
                         print("Error")
-            print(self.DataParse)
+        self.Manager.SendData(self.DataParse)
+        self.Manager.UpdateViewListDevice()
     def UpdateViewListDevice(self):
-        self.Manager.
+        self.Manager.UpdateViewListDevice()
     def LoadScripts(self):
         Result = QFileDialog.getExistingDirectory(self)
         DirScript = QDir(Result)
@@ -101,6 +103,12 @@ class MainWindow(QMainWindow):
                 #    Helper.DeviceHelper.function = types.MethodType(function,Helper.DeviceHelper)
                     #setattr(Helper.DeviceHelper, ScriptModule.__dict__[function], function)
                     #Helper.DeviceHelper.__dict__[function] = function
+            ListVar = []
+            f = open(QDir(Result).absoluteFilePath("Var.txt"),'r')
+            for ligne in f.readlines():
+                ListVar.append(ligne)
+            f.close()
+            Helper.add_variable_Masterisation(ListVar)
             self.Manager.ReloadTerminaux()
         else:
             #Error
