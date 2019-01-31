@@ -58,7 +58,7 @@ class MainWindow(QMainWindow):
         if result == None:
             return None
         self.ui.PathData.setText(result)
-        with open(result, newline='') as csvfile:
+        with open(result) as csvfile:
             spamreader = csv.reader(csvfile, delimiter='\t')
             #, quotechar=''
             VarName = []

@@ -38,10 +38,17 @@ class DeviceHelper():
         result = subprocess.run(PathExecutable+" shell "+Message, env={**os.environ, 'ANDROID_SERIAL': self.SerialNumber}, capture_output=True)
         self.Log += "<--"+str(Message)
         if PrintLog:
-            self.Log += "-->"+str(result.stdout)
+            self.Log += "-->"+str(result.stdout)+str("\r\n")
         return str(result.stdout)
-    def ClickOnNode(self, NameNode):
-       print(self.ShellIn("uiautomator dump /dev/tty", False))
+    def ClickOnNode(self, TextNode = "", IdNode = "", IdItemMenu= ""):
+        ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
+        result = re.findall("<node .*? resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" />", ActualScreen)
+        #result = re.findall(r"resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\" \/>", ActualScreen)
+        if result[0].__len__() == 4:
+            MidX = (int(result[0][0])+int(result[0][2]))/2
+            MidY = (int(result[0][1])+int(result[0][3]))/2
+            self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+
     def GetIMEI(self):
         rawResult = self.ShellIn("service call iphonesubinfo 1", False)
         tradParcell = "".join(re.findall(r"\'(.*?)\'", rawResult))
@@ -101,8 +108,16 @@ class Device(Thread):
         else:
             self.ItemProcess.setIcon(QIcon(".\\Asset\\red.svg"))
     def run(self):
-        functioCallable = getattr(self.HelperNode, self.HelperNode.FunctionCallDict[1])
-        functioCallable()
+        if self.StateProc == 0:
+            self.StateProc = 1
+            self.UpdateItem()
+            i = 1
+            while i <= self.HelperNode.FunctionCallDict.__len__():
+                functioCallable = getattr(self.HelperNode, self.HelperNode.FunctionCallDict[i])
+                functioCallable()
+                i = i+1
+            self.StateProc = 2
+            self.UpdateItem()
 
     def GetState(self):
         return self.SerialNo, self.StateData, self.StateProc
@@ -134,6 +149,8 @@ class ManagerDevice(Thread):
     Continue = True
     CallUi = None
     DataParse = None
+
+    DeviceSelected = None
 
     def __init__(self, Ui):
         Thread.__init__(self)
@@ -176,6 +193,7 @@ class ManagerDevice(Thread):
             #Delete de la ListDevice
             RemoveList = list(set(self.ListDevice.keys())-set(tmpList))
             self.UpdateViewListDevice()
+            self.GetLog()
             time.sleep(2)
 
 
@@ -195,7 +213,6 @@ class ManagerDevice(Thread):
         del self.ListDevice[Serial]
 
     def goDevice(self, Serial = None):
-        
         if Serial != None:
             self.ListDevice[Serial].run()
         else:
@@ -216,7 +233,6 @@ class ManagerDevice(Thread):
     def SendData(self, ListVariable):
         self.DataParse = ListVariable
         for deviceID in self.DataParse.keys():
-            print(deviceID)
             if self.ListDevice.keys().__contains__(deviceID):
                 self.ListDevice[deviceID].SetData(self.DataParse[deviceID])
             else:
@@ -224,6 +240,10 @@ class ManagerDevice(Thread):
                     if self.ListDevice[deviceIMEI].GetIMEI() == deviceID:
                         self.ListDevice[deviceIMEI].SetData(self.DataParse[deviceID])
     
-    def GetLog(self, Serial):
-        return self.ListDevice[Serial].GetLog()
+    def GetLog(self, Serial = None):
+        if Serial != None:
+            self.DeviceSelected = Serial
+            strlog = self.ListDevice[self.DeviceSelected].GetLog()
+            self.CallUi.ui.LogTerminal.setText(strlog)
+            return strlog
 
