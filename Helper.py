@@ -23,12 +23,15 @@ class DeviceHelper():
     ListVariable = []
     Variable = dict()
 
+    PathProject = ""
 
-    def __init__(self, serialNo):
+
+    def __init__(self, serialNo, pathProject):
         self.SerialNumber = serialNo
+        self.PathProject = pathProject
         self.GetIMEI()
-        
-    def ShellIn(self, Message, PrintLog = True):
+
+    def CallADB(self, Message):
         DossierActuel = QDir(QDir.currentPath())
         DossierActuel.cd("platform-tools")
         PathExecutable = ""
@@ -36,11 +39,45 @@ class DeviceHelper():
             PathExecutable = DossierActuel.absoluteFilePath("adb.exe")
         else:
             PathExecutable = DossierActuel.absoluteFilePath("adb")
-        result = subprocess.run(PathExecutable+" shell "+Message, env={**os.environ, 'ANDROID_SERIAL': self.SerialNumber}, capture_output=True)
+        result = subprocess.run(PathExecutable+" "+Message, env={**os.environ, 'ANDROID_SERIAL': self.SerialNumber}, capture_output=True)
+        return result
+
+    def ShellIn(self, Message, PrintLog = True):
+        result = self.CallADB("shell "+Message)
         self.Log += "<--"+str(Message)
         if PrintLog:
             self.Log += "-->"+str(result.stdout)+str("\r\n")
         return str(result.stdout, 'utf-8')
+
+    def InstallApk(self, Name = "", ListoptionADB = ""):#Locate APK in ressources dir
+        DossierProject = QDir(self.PathProject)
+        DossierProject.cd('Ressource')
+        PathAPK = DossierProject.absoluteFilePath(Name)
+        print(self.CallADB("install "+ListoptionADB+" "+PathAPK))
+
+
+    def CreateWebsiteShortcutChrome(self, Adresse = "google.com", Name = "Test%sWhitespace", Initialisation = True):
+        self.ShellIn("am start -n com.android.chrome/com.google.android.apps.chrome.Main -d "+Adresse)
+        #self.ShellIn("ls -la")
+        if Initialisation:
+            #if self.HasNode(IdNode = "com.android.chrome:id/send_report_checkbox",  Timeout = 0):
+            self.ClickOnNode(IdNode = "com.android.chrome:id/send_report_checkbox")
+            #if self.HasNode(IdNode = "com.android.chrome:id/terms_accept",  Timeout = 0):
+            self.ClickOnNode(IdNode = "com.android.chrome:id/terms_accept")
+            #if self.HasNode(IdNode = "com.android.chrome:id/negative_button",  Timeout = 0):
+            self.ClickOnNode(IdNode = "com.android.chrome:id/negative_button")
+        # if self.HasNode(IdNode = "com.android.chrome:id/toolbar_buttons",  Timeout = 0):
+            #self.ClickOnNode(IdNode = "com.android.chrome:id/toolbar_buttons")
+        self.ClickOnIndexMenu(IdIndex = "1", IdMenu="com.android.chrome:id/toolbar_buttons", TypeItem = "com.android.chrome:id/menu_button")
+        self.ClickOnIndexMenu(IdIndex = "9", IdMenu = "com.android.chrome:id/app_menu_list", TypeItem = "com.android.chrome:id/menu_item_text")
+        self.ClearTextEdit(IdTextEdit = "com.android.chrome:id/text")
+        self.ShellIn("input text '"+(Name).replace(" ", "%s")+"'")
+        self.ClickOnNode(IdNode = "android:id/button1")
+        self.ClickOnNode(IdNode = "com.android.chrome:id/tab_switcher_button")
+        self.ClickOnIndexMenu(IdIndex = "1", IdMenu="com.android.chrome:id/toolbar_buttons", TypeItem = "com.android.chrome:id/menu_button")
+        self.ClickOnIndexMenu(IdIndex = "2", IdMenu = "com.android.chrome:id/app_menu_list", TypeItem = "com.android.chrome:id/menu_item_text")
+        self.ShellIn("am force-stop com.android.chrome")
+
     def ClickOnNode(self, TextNode = "", IdNode = "", IdItemMenu= ""):
         ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
         result = re.findall("<node .*? resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" />", ActualScreen)
@@ -67,8 +104,12 @@ class DeviceHelper():
             if result.__len__() != 0:
                 return True
         return False
+
+    def GetScreen(self):
+        ActualScreen = (re.findall("<.*>", self.CallADB("exec-out uiautomator dump /dev/tty", False)))[0]
+        return ActualScreen
     def ClearTextEdit(self, IdTextEdit = ""):
-        ActualScreen = (re.findall("<.*>", self.ShellIn("uiautomator dump /dev/tty", False)))[0]
+        ActualScreen = self.GetScreen()
         tree = ET.fromstring(ActualScreen)
 
         #if IdTextEdit != ".*?":
@@ -119,10 +160,10 @@ class Device(Thread):
     ItemData = QTableWidgetItem()
     ItemProcess = QTableWidgetItem()
 
-    def __init__(self, serialNo):
+    def __init__(self, serialNo, PathProject):
         Thread.__init__(self)
         self.SerialNo = serialNo
-        self.HelperNode = DeviceHelper(serialNo)
+        self.HelperNode = DeviceHelper(serialNo, PathProject)
         self.VerifyData()
 
         self.ItemId = QTableWidgetItem(str(self.SerialNo))
@@ -235,7 +276,7 @@ class ManagerDevice(Thread):
 
 
     def AddDevice(self, Serial):
-        self.ListDevice[Serial] = Device(Serial)
+        self.ListDevice[Serial] = Device(Serial,self.CallUi.ui.PathScript.text())
 
         Itemid, data, process = (self.ListDevice[Serial]).GetItem()
         self.CallUi.ui.tableWidget.setRowCount(self.CallUi.ui.tableWidget.rowCount()+1)

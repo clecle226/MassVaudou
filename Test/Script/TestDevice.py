@@ -6,18 +6,9 @@ import types
 @add_function_Masterisation(1)
 def run(self):
     self.ShellIn("svc power stayon true") #Desactiver Mise en veille
-    #self.ShellIn("am start -n com.android.chrome/com.google.android.apps.chrome.Main -d https://stackoverflow.com")
-    #self.ShellIn("ls -la")
-    #if self.HasNode(IdNode = "com.android.chrome:id/send_report_checkbox",  Timeout = 0):
-    #self.ClickOnNode(IdNode = "com.android.chrome:id/send_report_checkbox")
-    #if self.HasNode(IdNode = "com.android.chrome:id/terms_accept",  Timeout = 0):
-    #self.ClickOnNode(IdNode = "com.android.chrome:id/terms_accept")
-    #if self.HasNode(IdNode = "com.android.chrome:id/negative_button",  Timeout = 0):
-    #self.ClickOnNode(IdNode = "com.android.chrome:id/negative_button")
-   # if self.HasNode(IdNode = "com.android.chrome:id/toolbar_buttons",  Timeout = 0):
-    self.ClickOnIndexMenu(IdIndex = "1", IdMenu="com.android.chrome:id/toolbar_buttons", TypeItem = "com.android.chrome:id/menu_button")
-    self.ClickOnIndexMenu(IdIndex = "9", IdMenu = "com.android.chrome:id/app_menu_list", TypeItem = "com.android.chrome:id/menu_item_text")
-    self.ClearTextEdit(IdTextEdit = "com.android.chrome:id/text")
+    #self.CreateWebsiteShortcutChrome(Adresse = "https://stackoverflow.com", Name = "Le site des pro", Initialisation = True)
+    #self.CreateWebsiteShortcutChrome(Adresse = "https://danstonchat.com", Name = "tjs le meilleur", Initialisation = False)
+    self.InstallApk("FDroid.apk", "-r")
     
 
     
