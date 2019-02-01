@@ -78,18 +78,28 @@ class DeviceHelper():
         self.ClickOnIndexMenu(IdIndex = "2", IdMenu = "com.android.chrome:id/app_menu_list", TypeItem = "com.android.chrome:id/menu_item_text")
         self.ShellIn("am force-stop com.android.chrome")
 
-    def ClickOnNode(self, TextNode = "", IdNode = "", IdItemMenu= ""):
-        ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
-        result = re.findall("<node .*? resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" />", ActualScreen)
-        #result = re.findall(r"resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\" \/>", ActualScreen)
+    def ClickOnNode(self, IdNode = ""):
+        tree = ET.fromstring(self.GetScreen())
+        ListNode = (tree.findall(".//node[@resource-id='"+IdNode+"']"))
+        result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+        if len(result) >= 1:
+            if result[0].__len__() == 4:
+                MidX = (int(result[0][0])+int(result[0][2]))/2
+                MidY = (int(result[0][1])+int(result[0][3]))/2
+                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+    def ClickOnNodeByXPath(self, XPath = ""):
+        tree = ET.fromstring(self.GetScreen())
+        ListNode = (tree.findall(XPath))
+        result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
         if len(result) >= 1:
             if result[0].__len__() == 4:
                 MidX = (int(result[0][0])+int(result[0][2]))/2
                 MidY = (int(result[0][1])+int(result[0][3]))/2
                 self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
     def ClickOnIndexMenu(self, IdIndex = "", IdMenu = "", TypeItem = ""):
-        ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
-        result = re.findall("<node .*? resource-id=\""+re.escape(IdMenu)+"\" .*?>.*?<node index=\""+re.escape(IdIndex)+"\".*?><node .*? resource-id=\""+re.escape(TypeItem)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" /></node>.*?</node>", ActualScreen)
+        tree = ET.fromstring(self.GetScreen())
+        ListNode = (tree.findall(".//node[@resource-id='"+IdIndex+"']/node[@index='"+IdMenu+"']/node[@resource-id='"+TypeItem+"']"))
+        result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
         if len(result) >= 1:
             if result[0].__len__() == 4:
                 MidX = (int(result[0][0])+int(result[0][2]))/2
@@ -106,8 +116,23 @@ class DeviceHelper():
         return False
 
     def GetScreen(self):
-        ActualScreen = (re.findall("<.*>", self.CallADB("exec-out uiautomator dump /dev/tty", False)))[0]
+        ActualScreen = (re.findall("<.*>", str(self.CallADB("exec-out uiautomator dump /dev/tty").stdout, 'utf-8')))[0]#FiltreXmlDump
         return ActualScreen
+
+    def Test(self):
+        ActualScreen = self.GetScreen()
+        tree = ET.fromstring(ActualScreen)
+        #<node .*? resource-id=\""+re.escape(IdMenu)+"\" .*?>.*?<node index=\""+re.escape(IdIndex)+"\".*?><node .*? resource-id=\""+re.escape(TypeItem)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" /></node>.*?</node>
+        ListNode = (tree.findall(".//node[@resource-id='com.android.chrome:id/app_menu_list']/node[@index='9']/node[@resource-id='com.android.chrome:id/menu_item_text']"))
+        
+        result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+        if len(result) >= 1:
+            if result[0].__len__() == 4:
+                MidX = (int(result[0][0])+int(result[0][2]))/2
+                MidY = (int(result[0][1])+int(result[0][3]))/2
+                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+
+
     def ClearTextEdit(self, IdTextEdit = ""):
         ActualScreen = self.GetScreen()
         tree = ET.fromstring(ActualScreen)
