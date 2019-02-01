@@ -10,6 +10,7 @@ from PySide2.QtWidgets import QTableWidgetItem
 from PySide2.QtGui import QIcon
 from PySide2.QtCore import Qt
 import platform
+import xml.etree.ElementTree  as ET
 
 class DeviceHelper():
     Processus = None
@@ -39,15 +40,51 @@ class DeviceHelper():
         self.Log += "<--"+str(Message)
         if PrintLog:
             self.Log += "-->"+str(result.stdout)+str("\r\n")
-        return str(result.stdout)
+        return str(result.stdout, 'utf-8')
     def ClickOnNode(self, TextNode = "", IdNode = "", IdItemMenu= ""):
         ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
         result = re.findall("<node .*? resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" />", ActualScreen)
         #result = re.findall(r"resource-id=\""+re.escape(IdNode)+"\" .*? bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\" \/>", ActualScreen)
-        if result[0].__len__() == 4:
-            MidX = (int(result[0][0])+int(result[0][2]))/2
-            MidY = (int(result[0][1])+int(result[0][3]))/2
-            self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+        if len(result) >= 1:
+            if result[0].__len__() == 4:
+                MidX = (int(result[0][0])+int(result[0][2]))/2
+                MidY = (int(result[0][1])+int(result[0][3]))/2
+                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+    def ClickOnIndexMenu(self, IdIndex = "", IdMenu = "", TypeItem = ""):
+        ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
+        result = re.findall("<node .*? resource-id=\""+re.escape(IdMenu)+"\" .*?>.*?<node index=\""+re.escape(IdIndex)+"\".*?><node .*? resource-id=\""+re.escape(TypeItem)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" /></node>.*?</node>", ActualScreen)
+        if len(result) >= 1:
+            if result[0].__len__() == 4:
+                MidX = (int(result[0][0])+int(result[0][2]))/2
+                MidY = (int(result[0][1])+int(result[0][3]))/2
+                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+    def HasNode(self, IdNode="", Timeout = 15):
+        FinalTimestamp = time.time()+Timeout
+        Succesfull = False
+        while not Succesfull and time.time() <= FinalTimestamp:
+            ActualScreen = self.ShellIn("uiautomator dump /dev/tty", False)
+            result = re.findall("<node .*? resource-id=\""+re.escape(IdNode)+"\"", ActualScreen)
+            if result.__len__() != 0:
+                return True
+        return False
+    def ClearTextEdit(self, IdTextEdit = ""):
+        ActualScreen = (re.findall("<.*>", self.ShellIn("uiautomator dump /dev/tty", False)))[0]
+        tree = ET.fromstring(ActualScreen)
+
+        #if IdTextEdit != ".*?":
+        #    IdTextEdit = re.escape(IdTextEdit)
+        #result = re.findall("<node .*? text=\"(.*?)\".*?resource-id=\""+IdTextEdit+"\" class=\"android\.widget\.EditText\" .*? />", ActualScreen)
+        #print(result)
+       # NbrChar = len(result[0][0])
+        NbrChar = len((tree.findall(".//*[@resource-id='"+IdTextEdit+"']")[0]).attrib['text'])
+        repeatInput = ""
+        i = 0
+        while i <= NbrChar:
+            repeatInput += " KEYCODE_DEL"
+            i += 1
+        self.ShellIn("input keyevent KEYCODE_MOVE_END")
+        self.ShellIn("input keyevent --longpress"+repeatInput)
+
 
     def GetIMEI(self):
         rawResult = self.ShellIn("service call iphonesubinfo 1", False)
