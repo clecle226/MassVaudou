@@ -4,10 +4,11 @@ from PySide2.QtCore import QFile, QObject, Signal, Slot, QDir, QObject, SIGNAL
 from ui_mainwindow import Ui_MainWindow
 import Helper
 import csv
-import requests
+import requests#pip
 import zipfile
 import platform
 import io
+from Manager import *
 
 global ExtenalClassMasterisation
 
@@ -33,7 +34,7 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.Manager = Helper.ManagerDevice(self)
+        self.Manager = ManagerDevice(self)
         self.Manager.start()
 
         self.ui.SelectScript.clicked.connect(self.LoadScripts)
