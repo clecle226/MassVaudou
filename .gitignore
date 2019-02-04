@@ -2,3 +2,4 @@ ui_mainwindow.py
 /Test/*
 **.pyc
 /platform-tools/
+/.vscode/**

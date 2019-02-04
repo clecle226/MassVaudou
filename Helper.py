@@ -7,6 +7,7 @@ import platform
 import xml.etree.ElementTree  as ET
 from PySide2.QtCore import QDir
 import time
+#import lxml.etree
 
 class DeviceHelper():
     Processus = None
@@ -54,35 +55,25 @@ class DeviceHelper():
 
     def CreateWebsiteShortcutChrome(self, Adresse = "google.com", Name = "Test%sWhitespace", Initialisation = True):
         self.ShellIn("am start -n com.android.chrome/com.google.android.apps.chrome.Main -d "+Adresse)
-        #self.ShellIn("ls -la")
         if Initialisation:
-            #if self.HasNode(IdNode = "com.android.chrome:id/send_report_checkbox",  Timeout = 0):
-            self.ClickOnNode(IdNode = "com.android.chrome:id/send_report_checkbox")
-            #if self.HasNode(IdNode = "com.android.chrome:id/terms_accept",  Timeout = 0):
-            self.ClickOnNode(IdNode = "com.android.chrome:id/terms_accept")
-            #if self.HasNode(IdNode = "com.android.chrome:id/negative_button",  Timeout = 0):
-            self.ClickOnNode(IdNode = "com.android.chrome:id/negative_button")
-        # if self.HasNode(IdNode = "com.android.chrome:id/toolbar_buttons",  Timeout = 0):
-            #self.ClickOnNode(IdNode = "com.android.chrome:id/toolbar_buttons")
+            self.ClickOnNodeByResourceId(IdNode = "com.android.chrome:id/send_report_checkbox")
+            self.ClickOnNodeByResourceId(IdNode = "com.android.chrome:id/terms_accept")
+            self.ClickOnNodeByResourceId(IdNode = "com.android.chrome:id/negative_button")
         self.ClickOnIndexMenu(IdIndex = "1", IdMenu="com.android.chrome:id/toolbar_buttons", TypeItem = "com.android.chrome:id/menu_button")
         self.ClickOnIndexMenu(IdIndex = "9", IdMenu = "com.android.chrome:id/app_menu_list", TypeItem = "com.android.chrome:id/menu_item_text")
         self.ClearTextEdit(IdTextEdit = "com.android.chrome:id/text")
         self.ShellIn("input text '"+(Name).replace(" ", "%s")+"'")
-        self.ClickOnNode(IdNode = "android:id/button1")
-        self.ClickOnNode(IdNode = "com.android.chrome:id/tab_switcher_button")
+        self.ClickOnNodeByResourceId(IdNode = "android:id/button1")
+        self.ClickOnNodeByResourceId(IdNode = "com.android.chrome:id/tab_switcher_button")
         self.ClickOnIndexMenu(IdIndex = "1", IdMenu="com.android.chrome:id/toolbar_buttons", TypeItem = "com.android.chrome:id/menu_button")
         self.ClickOnIndexMenu(IdIndex = "2", IdMenu = "com.android.chrome:id/app_menu_list", TypeItem = "com.android.chrome:id/menu_item_text")
         self.ShellIn("am force-stop com.android.chrome")
 
-    def ClickOnNode(self, IdNode = ""):
-        tree = ET.fromstring(self.GetScreen())
-        ListNode = (tree.findall(".//node[@resource-id='"+IdNode+"']"))
-        result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
-        if len(result) >= 1:
-            if result[0].__len__() == 4:
-                MidX = (int(result[0][0])+int(result[0][2]))/2
-                MidY = (int(result[0][1])+int(result[0][3]))/2
-                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+    def ClickOnNodeByResourceId(self, IdNode = ""):
+        self.ClickOnNodeByResourceId(".//node[@resource-id='"+IdNode+"']")
+    def ClickOnIndexMenu(self, IdIndex = "", IdMenu = "", TypeItem = ""):
+        self.ClickOnNodeByXPath(".//node[@resource-id='"+IdIndex+"']/node[@index='"+IdMenu+"']/node[@resource-id='"+TypeItem+"']")
+
     def ClickOnNodeByXPath(self, XPath = ""):
         tree = ET.fromstring(self.GetScreen())
         ListNode = (tree.findall(XPath))
@@ -92,15 +83,63 @@ class DeviceHelper():
                 MidX = (int(result[0][0])+int(result[0][2]))/2
                 MidY = (int(result[0][1])+int(result[0][3]))/2
                 self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
-    def ClickOnIndexMenu(self, IdIndex = "", IdMenu = "", TypeItem = ""):
+    def LongClickOnNodeByXPath(self, XPath = "", TimeClick = 500):
         tree = ET.fromstring(self.GetScreen())
-        ListNode = (tree.findall(".//node[@resource-id='"+IdIndex+"']/node[@index='"+IdMenu+"']/node[@resource-id='"+TypeItem+"']"))
+        ListNode = (tree.findall(XPath))
         result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
         if len(result) >= 1:
             if result[0].__len__() == 4:
                 MidX = (int(result[0][0])+int(result[0][2]))/2
                 MidY = (int(result[0][1])+int(result[0][3]))/2
-                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+                self.ShellIn("input swipe "+str(int(MidX))+" "+str(int(MidY))+" "+str(int(MidX))+" "+str(int(MidY))+" "+str(TimeClick))
+    def LongClickOnIconeLauncher(self, Name = ""):
+        #good XPath but wrong Parser ET
+        #.//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@resource-id='com.sec.android.app.launcher:id/iconview_titleView' and @text='Téléphone']/..
+        self.LongClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/..")
+
+    def MoveIconeFirstPlace(self, Name=""):
+        tree = ET.fromstring(self.GetScreen())
+        ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/.."))
+        result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+        if len(result) >= 1:
+            if result[0].__len__() == 4:
+                MidXSource = (int(result[0][0])+int(result[0][2]))/2
+                MidYSource = (int(result[0][1])+int(result[0][3]))/2
+                ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@resource-id='com.sec.android.app.launcher:id/apps_content']/*[1]/*[1]/*[@index='0']"))
+                resultDest = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+                LeftXDest = int(resultDest[0][0])
+                MidYDest = (int(resultDest[0][1])+int(resultDest[0][3]))/2
+                self.ShellIn("input draganddrop "+str(int(MidXSource))+" "+str(int(MidYSource))+" "+str(int(LeftXDest))+" "+str(int(MidYDest))+" 250")
+    def SearchClickIconeLauncher(self, Name=""):
+        EcranNumber = 0
+        IconeFound = False
+        ActualScreen = self.GetScreen()
+        while ActualScreen != NextSxreen or not IconeFound:
+            ActualScreen = NextScreen
+            tree = ET.fromstring(ActualScreen)
+            ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/.."))
+            if len(ListNode) > 0:# IconeTrouvé
+                self.ClickOnNodeByXPath(self, ".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/..")
+                IconeFound = True
+            else:#Icone non trouvé
+                ListNodeSlide = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']"))
+                result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+                if len(result) >= 1:
+                    if result[0].__len__() == 4:
+                        #MidXSource = (int(result[0][0])+int(result[0][2]))/2
+                        MidYSource = (int(result[0][1])+int(result[0][3]))/2
+                EcranNumber += 1
+        while EcranNumber > 0:
+            tree = ET.fromstring(ActualScreen)
+            ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']"))
+            result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+            if len(result) >= 1:
+                if result[0].__len__() == 4:
+                    #MidXSource = (int(result[0][0])+int(result[0][2]))/2
+                    MidYSource = (int(result[0][1])+int(result[0][3]))/2
+            EcranNumber =- 1
+            
+    result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
     def HasNode(self, IdNode="", Timeout = 15):
         FinalTimestamp = time.time()+Timeout
         Succesfull = False
@@ -116,31 +155,28 @@ class DeviceHelper():
         return ActualScreen
 
     def Test(self):
-        ActualScreen = self.GetScreen()
+        self.MoveIconeFirstPlace("Galerie")
+        '''ActualScreen = self.GetScreen()
         tree = ET.fromstring(ActualScreen)
-
+        #root = lxml.etree.parse(ActualScreen)
+        #print(root.xpath(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@resource-id='com.sec.android.app.launcher:id/iconview_titleView' and @text='Téléphone']/.."))
         #.//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@resource-id='com.sec.android.app.launcher:id/iconview_titleView' and @text='Applications Microsoft']/..
 
         #<node .*? resource-id=\""+re.escape(IdMenu)+"\" .*?>.*?<node index=\""+re.escape(IdIndex)+"\".*?><node .*? resource-id=\""+re.escape(TypeItem)+"\" .*? bounds=\"\[(\d*),(\d*)\]\[(\d*),(\d*)\]\" /></node>.*?</node>
-        ListNode = (tree.findall(".//node[@resource-id='com.android.chrome:id/app_menu_list']/node[@index='9']/node[@resource-id='com.android.chrome:id/menu_item_text']"))
+        ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@resource-id='com.sec.android.app.launcher:id/iconview_titleView' and @text='Téléphone']/.."))
         
         result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
         if len(result) >= 1:
             if result[0].__len__() == 4:
                 MidX = (int(result[0][0])+int(result[0][2]))/2
                 MidY = (int(result[0][1])+int(result[0][3]))/2
-                self.ShellIn("input tap "+str(int(MidX))+" "+str(int(MidY)))
+                self.ShellIn("input swipe "+str(int(MidX))+" "+str(int(MidY))+" "+str(int(MidX))+" "+str(int(MidY))+" 500")'''
 
 
     def ClearTextEdit(self, IdTextEdit = ""):
         ActualScreen = self.GetScreen()
         tree = ET.fromstring(ActualScreen)
 
-        #if IdTextEdit != ".*?":
-        #    IdTextEdit = re.escape(IdTextEdit)
-        #result = re.findall("<node .*? text=\"(.*?)\".*?resource-id=\""+IdTextEdit+"\" class=\"android\.widget\.EditText\" .*? />", ActualScreen)
-        #print(result)
-       # NbrChar = len(result[0][0])
         NbrChar = len((tree.findall(".//*[@resource-id='"+IdTextEdit+"']")[0]).attrib['text'])
         repeatInput = ""
         i = 0
@@ -149,7 +185,6 @@ class DeviceHelper():
             i += 1
         self.ShellIn("input keyevent KEYCODE_MOVE_END")
         self.ShellIn("input keyevent --longpress"+repeatInput)
-
 
     def GetIMEI(self):
         rawResult = self.ShellIn("service call iphonesubinfo 1", False)
