@@ -6,10 +6,12 @@ import types
 @add_function_Masterisation(1)
 def run(self):
     self.ShellIn("svc power stayon true") #Desactiver Mise en veille
-    self.Test()
+    #self.Test()
     #self.CreateWebsiteShortcutChrome(Adresse = "https://stackoverflow.com", Name = "Le site des pro", Initialisation = True)
     #self.CreateWebsiteShortcutChrome(Adresse = "https://danstonchat.com", Name = "tjs le meilleur", Initialisation = False)
     #self.InstallApk("FDroid.apk", "-r")
+    self.CreateDossierApp(["Message","Contacts", "Galerie", "Play Musique", "Test"],"Jaune", True)
+    #self.SearchClickIconeLauncher("Téléphone")
     
 
     
