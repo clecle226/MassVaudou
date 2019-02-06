@@ -70,9 +70,9 @@ class DeviceHelper():
         self.ShellIn("am force-stop com.android.chrome")
 
     def ClickOnNodeByResourceId(self, IdNode = ""):
-        self.ClickOnNodeByResourceId(".//node[@resource-id='"+IdNode+"']")
+        return self.ClickOnNodeByXPath(".//node[@resource-id='"+IdNode+"']")
     def ClickOnIndexMenu(self, IdIndex = "", IdMenu = "", TypeItem = ""):
-        self.ClickOnNodeByXPath(".//node[@resource-id='"+IdIndex+"']/node[@index='"+IdMenu+"']/node[@resource-id='"+TypeItem+"']")
+        return self.ClickOnNodeByXPath(".//node[@resource-id='"+IdIndex+"']/node[@index='"+IdMenu+"']/node[@resource-id='"+TypeItem+"']")
 
     def ClickOnNodeByXPath(self, XPath = ""):
         tree = ET.fromstring(self.GetScreen())
@@ -101,6 +101,29 @@ class DeviceHelper():
         #.//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@resource-id='com.sec.android.app.launcher:id/iconview_titleView' and @text='Téléphone']/..
         self.LongClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/..")
 
+    def ChangeWallpaperSamsungThemes(self):
+        self.ShellIn("am start -n com.samsung.android.themestore/com.samsung.android.themestore.activity.MainActivity")
+        #Bouton Ajout raccourcis samsung thèmes (disabled)
+        self.ClickOnNodeByResourceId("com.samsung.android.themestore:id/cb_add_shortcut")
+        #Bouton démmaré
+        self.ClickOnNodeByXPath(".//*[@resource-id='com.samsung.android.themestore:id/fragement_base']/*[@index='0']/*[@index='1']/*[@index='2']")
+        #Autoriser
+        self.ClickOnNodeByResourceId("com.android.packageinstaller:id/permission_allow_button")
+        #Refuser l'ajout à l'écran d'accueil
+        self.ClickOnNodeByResourceId("com.sec.android.app.launcher:id/add_item_cancel_button")
+        #Click On Galerie
+        self.ClickOnNodeByXPath(".//*[@resource-id='com.samsung.android.themestore:id/rcv_main_my_device']/*[@index='0']/*[@index='0']")
+        #WARNING RISK OF ERROR Change method speedly
+        #Click on anyone pictures
+        self.ClickOnNodeByXPath(".//*[@class='com.sec.samsung.gallery.glview.composeView.ThumbObject']")
+        #Ecran de vérouillage ET d'accueil
+        self.ClickOnNodeByXPath(".//*[@resource-id='android:id/resolver_list']/*[@index='0']/*[@index='2']")
+        #Definir comme fond d'écran
+        self.ClickOnNodeByResourceId("com.sec.android.wallpapercropper2:id/actionbar_layout")
+        self.ShellIn("input keyevent KEYCODE_HOME")
+
+
+
     def CreateDossierApp(self, ListeIcone = [], NomDossier="Null", CopyOnDesktop = False, MoveFirstPlace = True):
         #Ouvrir launcher
         self.ShellIn("am start -n com.sec.android.app.launcher/com.sec.android.app.launcher.activities.LauncherActivity")
@@ -114,6 +137,7 @@ class DeviceHelper():
         i = 1
         while i < len(ListeIcone):
             self.SearchClickIconeLauncher(ListeIcone[i])
+            i +=1
         #clickCréerDossier
         self.ClickOnNodeByResourceId("com.sec.android.app.launcher:id/multi_select_create_folder")
         #click pour modifier le nom du dossier
@@ -205,8 +229,11 @@ class DeviceHelper():
         return False
 
     def GetScreen(self):
-        ActualScreen = (re.findall("<.*>", str(self.CallADB("exec-out uiautomator dump /dev/tty").stdout, 'utf-8')))[0]#FiltreXmlDump
-        return ActualScreen
+        FinalTimestamp = time.time()+15
+        ActualScreen = []
+        while len(ActualScreen) == 0 and time.time() <= FinalTimestamp:
+            ActualScreen = (re.findall("<.*>", str(self.CallADB("exec-out uiautomator dump /dev/tty").stdout, 'utf-8')))#FiltreXmlDump
+        return ActualScreen[0]
 
     def Test(self):
         self.MoveIconeFirstPlace("Galerie")
