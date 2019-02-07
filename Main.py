@@ -41,9 +41,6 @@ class MainWindow(QMainWindow):
         self.ui.SelectData.clicked.connect(self.LoadData)
         self.ui.ButtonAllGo.clicked.connect(self.ButtonAllGo)
 
-        self.ui.tableWidget.setColumnCount(3)
-        self.ui.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.ui.tableWidget.setHorizontalHeaderLabels(["ID", "Donnée Vérifié", "Etat du script"])
         self.ui.tableWidget.itemActivated.connect(self.ClickDevice)
         #QObject.connect(self.ui.tableWidget, SIGNAL ('itemClicked(item)'), self.ClickDevice)
 
@@ -52,7 +49,8 @@ class MainWindow(QMainWindow):
 
     def ClickDevice(self, item):
         ClickDevice = (self.ui.tableWidget.item(item.row(),0).text())
-        self.ChangerLogTerminal(self.Manager.GetLog(ClickDevice))
+        self.Manager.GetLog(ClickDevice)
+        self.Manager.GetListItemFunction(ClickDevice)
 
     def LoadData(self):
         result = (QFileDialog.getOpenFileName(self))[0]
@@ -82,8 +80,10 @@ class MainWindow(QMainWindow):
                         print("Error")
         self.Manager.SendData(self.DataParse)
         self.Manager.UpdateViewListDevice()
+
     def UpdateViewListDevice(self):
         self.Manager.UpdateViewListDevice()
+
     def LoadScripts(self):
         Result = QFileDialog.getExistingDirectory(self)
         DirScript = QDir(Result)
@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
                         del sys.modules[mod_name]
                         Helper.DeviceHelper.FunctionCallDict = {}
             self.ui.PathScript.setText(Result)
-            self.ui.LogTerminal.setText(DirScript.absolutePath())
+            #self.ui.LogTerminal.setText(DirScript.absolutePath())
             sys.path.append(DirScript.absolutePath())
             DirScript.entryInfoList(["*.py"])
             for Script in ListScript:
@@ -120,8 +120,6 @@ class MainWindow(QMainWindow):
         else:
             #Error
             print("Error")
-    def ChangerLogTerminal(self, Content = ""):
-        self.ui.LogTerminal.setText(Content)
     def __del__(self):
         self.Manager.stop()
 

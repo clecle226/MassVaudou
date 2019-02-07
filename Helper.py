@@ -20,12 +20,16 @@ class DeviceHelper():
     ListVariable = []
     Variable = dict()
 
+
     PathProject = ""
 
+    DeviceObject = None
 
-    def __init__(self, serialNo, pathProject):
+
+    def __init__(self, serialNo, pathProject, Deviceobject):
         self.SerialNumber = serialNo
         self.PathProject = pathProject
+        self.DeviceObject = Deviceobject
         self.GetIMEI()
 
     def CallADB(self, Message):
@@ -41,9 +45,11 @@ class DeviceHelper():
 
     def ShellIn(self, Message, PrintLog = True):
         result = self.CallADB("shell "+Message)
-        self.Log += "<--"+str(Message)
+        #self.Log += "<--"+str(Message)
+        self.DeviceObject.AddLog(Message,"Sortant")
         if PrintLog:
-            self.Log += "-->"+str(result.stdout)+str("\r\n")
+            self.DeviceObject.AddLog(str(result.stdout, 'utf-8'),"Entrant")
+            #self.Log += "-->"+str(result.stdout)+str("\r\n")
         return str(result.stdout, 'utf-8')
 
     def InstallApk(self, Name = "", ListoptionADB = ""):#Locate APK in ressources dir
@@ -125,18 +131,53 @@ class DeviceHelper():
 
 
     def CreateDossierApp(self, ListeIcone = [], NomDossier="Null", CopyOnDesktop = False, MoveFirstPlace = True):
+        def ChangePage(ActualPage, GoPage):
+            while ActualPage != GoPage:
+                if ActualPage < GoPage:
+                    self.SlideByXPath("Gauche",".//*[@resource-id='com.sec.android.app.launcher:id/launcher']")
+                    ActualPage += 1
+                elif ActualPage > GoPage:
+                    self.SlideByXPath("Droite",".//*[@resource-id='com.sec.android.app.launcher:id/launcher']")
+                    ActualPage -= 1
+
         #Ouvrir launcher
         self.ShellIn("am start -n com.sec.android.app.launcher/com.sec.android.app.launcher.activities.LauncherActivity")
         if self.HasNode("com.sec.android.app.launcher:id/workspace"):
             #Slide up
             self.SlideByXPath("Haut",".//*[@resource-id='com.sec.android.app.launcher:id/workspace']/node[1]")
+        #InitialiseListePage et go first page
+        ListPageIcone = {}
+        for Item in ListeIcone:
+            ListPageIcone[Item] = 0
+        ActualScreen = self.GetScreen()
+        NextScreen = ""
+        while ActualScreen != NextScreen:
+            if NextScreen != "":
+                ActualScreen = NextScreen
+            self.SlideByXPath("Droite",".//*[@resource-id='com.sec.android.app.launcher:id/launcher']")
+            NextScreen = self.GetScreen()
+        ActualPage = 1
+        NextScreen = ""
+        while ActualScreen != NextScreen:
+            if NextScreen != "":
+                ActualScreen = NextScreen
+            ListIconePageActual = self.SearchIconeInPage(ActualPage, ListeIcone)
+            for item in ListIconePageActual:
+                ListPageIcone[item] = ActualPage
+            
+            self.SlideByXPath("Gauche",".//*[@resource-id='com.sec.android.app.launcher:id/launcher']")
+            NextScreen = self.GetScreen()
+            ActualPage += 1
+    
         #Longclick 1er icone
+        ChangePage(ActualPage, ListPageIcone[ListeIcone[0]])
         self.LongClickOnIconeLauncher(ListeIcone[0])
         self.ClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/drag_layer']/*[@index='0']")
         #Search le reste des Icone
         i = 1
         while i < len(ListeIcone):
-            self.SearchClickIconeLauncher(ListeIcone[i])
+            ChangePage(ActualPage, ListPageIcone[ListeIcone[i]])
+            self.ClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+ListeIcone[i]+"']/..")
             i +=1
         #clickCréerDossier
         self.ClickOnNodeByResourceId("com.sec.android.app.launcher:id/multi_select_create_folder")
@@ -149,6 +190,16 @@ class DeviceHelper():
             self.LongClickOnIconeLauncher(NomDossier)
             self.ClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/drag_layer']/*[@index='1']")
 
+    def SearchIconeInPage(self, ActualScreen, ListIcone):
+        ResultListIcone = []
+        tree = ET.fromstring(ActualScreen)
+        for item in ListIcone:
+            ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/.."))
+            result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+            if len(result) >= 1:
+                if result[0].__len__() == 4:
+                    ResultListIcone.append(item)
+        return ResultListIcone
     def SlideByXPath(self, Direction = "Gauche", XPath = "", Timeout="250"):
         tree = ET.fromstring(self.GetScreen())
         ListNode = (tree.findall(XPath))

@@ -6,6 +6,8 @@ import types
 @add_function_Masterisation(1)
 def run(self):
     self.ShellIn("svc power stayon true") #Desactiver Mise en veille
+    while self.HasNode("com.android.systemui:id/layout_group1_for_cover"):
+        time.sleep(1)
     #self.Test()
     #self.CreateWebsiteShortcutChrome(Adresse = "https://stackoverflow.com", Name = "Le site des pro", Initialisation = True)
     #self.CreateWebsiteShortcutChrome(Adresse = "https://danstonchat.com", Name = "tjs le meilleur", Initialisation = False)
@@ -14,7 +16,7 @@ def run(self):
     #self.SearchClickIconeLauncher("Téléphone")
 
     #self.ChangeWallpaperSamsungThemes()
-
+    return 1
     
     
     #am start -n com.android.settings/.Settings\$DisplaySettingsActivity

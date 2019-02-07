@@ -85,7 +85,12 @@ class ManagerDevice(Thread):
     def GetLog(self, Serial = None):
         if Serial != None:
             self.DeviceSelected = Serial
-            strlog = self.ListDevice[self.DeviceSelected].GetLog()
-            self.CallUi.ui.LogTerminal.setText(strlog)
-            return strlog
+            self.CallUi.ui.scrollArea.setLayout(self.ListDevice[self.DeviceSelected].GetLayout())
+    def GetListItemFunction(self, Serial = None):
+        if Serial != None:
+            self.DeviceSelected = Serial
+            Listtmp = self.ListDevice[self.DeviceSelected].GetListItemFunction()
+            self.CallUi.ui.ListScript.clear()
+            for item in Listtmp:
+                self.CallUi.ui.ListScript.addItem(item)
 
