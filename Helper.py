@@ -15,6 +15,7 @@ class DeviceHelper():
     IMEI1 = None
     IMEI2 = None
     SerialNumber = ""
+    LastScreen = ""
 
     FunctionCallDict = {}
     ListVariable = []
@@ -33,6 +34,8 @@ class DeviceHelper():
         self.GetIMEI()
 
     def CallADB(self, Message):
+        self.LastScreen = ""
+
         DossierActuel = QDir(QDir.currentPath())
         DossierActuel.cd("platform-tools")
         PathExecutable = ""
@@ -128,8 +131,13 @@ class DeviceHelper():
         self.ClickOnNodeByResourceId("com.sec.android.wallpapercropper2:id/actionbar_layout")
         self.ShellIn("input keyevent KEYCODE_HOME")
 
-
-
+    def DesactivatePackage(self, ListPackage):
+        for item in ListPackage:
+            self.ShellIn("pm disable-user "+ListPackage)
+    def RemovePackage(self, ListPackage):
+        for item in ListPackage:
+            self.ShellIn("pm uninstall"+ListPackage)
+        
     def CreateDossierApp(self, ListeIcone = [], NomDossier="Null", CopyOnDesktop = False, MoveFirstPlace = True):
         def ChangePage(ActualPage, GoPage):
             while ActualPage != GoPage:
@@ -139,6 +147,7 @@ class DeviceHelper():
                 elif ActualPage > GoPage:
                     self.SlideByXPath("Droite",".//*[@resource-id='com.sec.android.app.launcher:id/launcher']")
                     ActualPage -= 1
+            return ActualPage
 
         #Ouvrir launcher
         self.ShellIn("am start -n com.sec.android.app.launcher/com.sec.android.app.launcher.activities.LauncherActivity")
@@ -161,22 +170,23 @@ class DeviceHelper():
         while ActualScreen != NextScreen:
             if NextScreen != "":
                 ActualScreen = NextScreen
-            ListIconePageActual = self.SearchIconeInPage(ActualPage, ListeIcone)
+            ListIconePageActual = self.SearchIconeInPage(ActualScreen, ListeIcone)
             for item in ListIconePageActual:
                 ListPageIcone[item] = ActualPage
             
             self.SlideByXPath("Gauche",".//*[@resource-id='com.sec.android.app.launcher:id/launcher']")
             NextScreen = self.GetScreen()
             ActualPage += 1
-    
+        ActualPage -= 1
+
         #Longclick 1er icone
-        ChangePage(ActualPage, ListPageIcone[ListeIcone[0]])
+        ActualPage = ChangePage(ActualPage, ListPageIcone[ListeIcone[0]])
         self.LongClickOnIconeLauncher(ListeIcone[0])
         self.ClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/drag_layer']/*[@index='0']")
         #Search le reste des Icone
         i = 1
         while i < len(ListeIcone):
-            ChangePage(ActualPage, ListPageIcone[ListeIcone[i]])
+            ActualPage = ChangePage(ActualPage, ListPageIcone[ListeIcone[i]])
             self.ClickOnNodeByXPath(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+ListeIcone[i]+"']/..")
             i +=1
         #clickCréerDossier
@@ -194,11 +204,12 @@ class DeviceHelper():
         ResultListIcone = []
         tree = ET.fromstring(ActualScreen)
         for item in ListIcone:
-            ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+Name+"']/.."))
-            result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
-            if len(result) >= 1:
-                if result[0].__len__() == 4:
-                    ResultListIcone.append(item)
+            ListNode = (tree.findall(".//*[@resource-id='com.sec.android.app.launcher:id/launcher']//*[@text='"+item+"']/.."))
+            if len(ListNode) > 0:
+                result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
+                if len(result) >= 1:
+                    if len(result[0]) == 4:
+                        ResultListIcone.append(item)
         return ResultListIcone
     def SlideByXPath(self, Direction = "Gauche", XPath = "", Timeout="250"):
         tree = ET.fromstring(self.GetScreen())
@@ -208,16 +219,23 @@ class DeviceHelper():
             result = re.findall("\[(\d*),(\d*)\]\[(\d*),(\d*)\]", ListNode[0].attrib['bounds'])
             if len(result) >= 1:
                 if result[0].__len__() == 4:
+                    #-1% for parse error of screen border
+                    LeftCorner = int(result[0][0])-int(0.01*int(result[0][0]))
+                    RightCorner = int(result[0][2])-int(0.01*int(result[0][2]))
+                    DownCorner = int(result[0][3])-int(0.01*int(result[0][3]))
+                    UpCorner =int(result[0][1])-int(0.01*int(result[0][1]))
+
                     MidX = (int(result[0][0])+int(result[0][2]))/2
                     MidY = (int(result[0][1])+int(result[0][3]))/2
+                    
                     if Direction == "Gauche":
-                        self.ShellIn("input swipe "+str(int(result[0][2]))+" "+str(int(MidY))+" "+str(int(result[0][0]))+" "+str(int(MidY))+" "+Timeout)
+                        self.ShellIn("input swipe "+str(RightCorner)+" "+str(int(MidY))+" "+str(LeftCorner)+" "+str(int(MidY))+" "+Timeout)
                     elif Direction == "Droite":
-                        self.ShellIn("input swipe "+str(int(result[0][0]))+" "+str(int(MidY))+" "+str(int(result[0][2]))+" "+str(int(MidY))+" "+Timeout)
+                        self.ShellIn("input swipe "+str(LeftCorner)+" "+str(int(MidY))+" "+str(RightCorner)+" "+str(int(MidY))+" "+Timeout)
                     elif Direction == "Haut":
-                        self.ShellIn("input swipe "+str(int(MidX))+" "+str(int(result[0][3]))+" "+str(int(MidX))+" "+str(int(result[0][1]))+" "+Timeout)
+                        self.ShellIn("input swipe "+str(int(MidX))+" "+str(DownCorner)+" "+str(int(MidX))+" "+str(UpCorner)+" "+Timeout)
                     elif Direction == "Bas":
-                        self.ShellIn("input swipe "+str(int(MidX))+" "+str(int(result[0][1]))+" "+str(int(MidX))+" "+str(int(result[0][3]))+" "+Timeout)
+                        self.ShellIn("input swipe "+str(int(MidX))+" "+str(UpCorner)+" "+str(int(MidX))+" "+str(DownCorner)+" "+Timeout)
                     else:
                         return False
                     return True
@@ -280,6 +298,8 @@ class DeviceHelper():
         return False
 
     def GetScreen(self):
+        if self.LastScreen != "":
+            return self.LastScreen
         FinalTimestamp = time.time()+15
         ActualScreen = []
         while len(ActualScreen) == 0 and time.time() <= FinalTimestamp:

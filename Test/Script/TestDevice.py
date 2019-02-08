@@ -11,8 +11,8 @@ def run(self):
     #self.Test()
     #self.CreateWebsiteShortcutChrome(Adresse = "https://stackoverflow.com", Name = "Le site des pro", Initialisation = True)
     #self.CreateWebsiteShortcutChrome(Adresse = "https://danstonchat.com", Name = "tjs le meilleur", Initialisation = False)
-    #self.InstallApk("FDroid.apk", "-r")
-    self.CreateDossierApp(["Messages","Contacts", "Galerie", "Play Musique", "Test"],"Jaune", True)
+    self.InstallApk("FDroid.apk", "-r")
+    #self.CreateDossierApp(["Messages","Contacts", "Galerie", "Play Musique", "Test"],"Jaune", True)
     #self.SearchClickIconeLauncher("Téléphone")
 
     #self.ChangeWallpaperSamsungThemes()
