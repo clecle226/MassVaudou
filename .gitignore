@@ -3,3 +3,7 @@ ui_mainwindow.py
 **.pyc
 /platform-tools/
 /.vscode/**
+/dist/**
+/build/**
+/__pycache__/**
+/Main.spec
